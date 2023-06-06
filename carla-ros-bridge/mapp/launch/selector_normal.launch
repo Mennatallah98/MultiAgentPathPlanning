@@ -1,0 +1,33 @@
+<!-- -->
+<launch>
+
+    <arg name='car_id'    default=" "/>
+    <arg name='status'    default='0'/>
+
+    <arg name="role_name" default="hero"/> 
+    <arg name="goal_pose" default=" "/>
+    <!-- ===================================================== -->
+
+    <group if="$(eval arg('status') == 1)"> <!--Retrive-->
+        <node pkg="mapp" type="bag_retrive.py" name="bag_retrive_$(arg role_name)" output="screen">
+            <param name="role_name" value="$(arg role_name)"/>
+            <param name="goal_pose" value="$(arg goal_pose)"/>
+            <param name="car_id" value="$(arg car_id)"/>
+            <param name="status" value="$(arg status)"/>
+        </node>
+    </group>
+
+    <group if="$(eval arg('status') == 0)"> <!--Park-->
+        <include file="$(find mapp)/launch/carla_multi.launch"> 
+            <arg name="role_name" value="$(arg role_name)"/>
+            <arg name="goal_pose" value="$(arg goal_pose)"/>
+            <arg name="car_id" value="$(arg car_id)"/>
+            <arg name="status" value="$(arg status)"/>
+        </include>
+    </group>
+
+    <node pkg="mapp" type="kill.py" name="kill_$(arg role_name)" output="screen" required="true">
+        <param name="role_name" value="$(arg role_name)"/>
+    </node>
+
+</launch>

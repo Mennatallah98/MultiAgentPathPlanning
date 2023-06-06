@@ -1,0 +1,9 @@
+<!-- -->
+<launch>
+
+  <node pkg="connections" type="client_spawn.py" name="client_spawn" output="screen"/>
+
+  <node pkg="connections" type="server_database.py" name="server_database" output="screen"/>
+
+
+</launch>

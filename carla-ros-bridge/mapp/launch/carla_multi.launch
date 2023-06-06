@@ -1,0 +1,74 @@
+<!-- -->
+<launch>
+  <!-- launch a complete carla-ros-environment with an ad agent that steers the ego-vehicle -->
+
+  <!-- carla parameter -->
+  <arg name='host' default='localhost'/> <!-- host the carla server is running on -->
+  <arg name='port' default='2000'/> <!-- port of the carla server -->
+  <arg name="town" default="parking_4"/> <!-- the carla town to load-->
+  <arg name='timeout' default='50'/> <!-- the carla timeout for server communication -->
+  <arg name='passive' default='False'/> <!-- enable/disable passive mode -->
+  <arg name='synchronous_mode_wait_for_vehicle_control_command' default='False'/><!-- should the ros bridge wait for a vehicle control command before proceeding with the next tick -->
+  <arg name='fixed_delta_seconds' default='0.05'/><!-- frequency of the carla ticks -->
+  <arg name='car_id'    default=' '/>
+  <arg name='status'    default='0'/>
+
+  <!-- spectator camera parameter -->
+  <arg name="role_name" default="hero"/> <!-- role name of the ego vehicle (used for identification in many nodes) -->
+  <arg name="goal_pose" default=" "/>
+  <arg name='spawn_point' default='-157.0,-45.54,2,0,0,90'/> <!-- fixed spawn point, set to "" for a random spawn point -->
+  <arg name="target_speed" default="2"/> <!-- target speed in m/s that the agent tries to follow -->
+  <arg name="avoid_risk" default="True"/> <!-- should the agent avoid crashs and respect red traffic lights? -->
+  <!-- ===================================================== -->
+
+  <!-- Publish the target speed -->
+  <node pkg="rostopic" type="rostopic" name="rostopic" args="pub /carla/$(arg role_name)/target_speed std_msgs/Float64 $(arg target_speed)"/>
+  
+
+  <!-- The agent to control the ego vehicle -->
+  <arg name="Kp_lateral" default="0.9"/>
+  <arg name="Ki_lateral" default="0.0"/>
+  <arg name="Kd_lateral" default="0.0"/>
+  <arg name="Kp_longitudinal" default="0.206"/>
+  <arg name="Ki_longitudinal" default="0.0206"/>
+  <arg name="Kd_longitudinal" default="0.515"/>
+  <arg name="control_time_step" default="0.05"/>
+
+
+  <node pkg="carla_ad_agent" type="ad_agent.py" name="carla_ad_agent_$(arg role_name)" output="screen">
+    <param name="role_name" value="$(arg role_name)" />
+    <param name="avoid_risk" value="$(arg avoid_risk)" />
+  </node>
+
+  <node pkg="carla_ad_agent" type="local_planner.py" name="local_planner_$(arg role_name)" output="screen">
+    <param name="role_name" value="$(arg role_name)" />
+    <param name="Kp_lateral" value="$(arg Kp_lateral)" />
+    <param name="Ki_lateral" value="$(arg Ki_lateral)" />
+    <param name="Kd_lateral" value="$(arg Kd_lateral)" />
+    <param name="Kp_longitudinal" value="$(arg Kp_longitudinal)" />
+    <param name="Ki_longitudinal" value="$(arg Ki_longitudinal)" />
+    <param name="Kd_longitudinal" value="$(arg Kd_longitudinal)" />
+    <param name="control_time_step" value="$(arg control_time_step)" />
+    <param name="status" value="$(arg status)"/>
+  </node>
+
+  <!-- Provide a route and access to the CARLA waypoint API (required by carla_ad_agent) -->
+  <node pkg="carla_waypoint_publisher" type="carla_waypoint_publisher.py" name="carla_waypoint_publisher_$(arg role_name)" output="screen">
+    <param name="role_name" value="$(arg role_name)" />
+    <param name="host" value="$(arg host)" />
+    <param name="port" value="$(arg port)" />
+    <param name="timeout" value="$(arg timeout)" />
+    <param name="goal_pose" value="$(arg goal_pose)" />
+  </node>
+  
+  <!-- Visualize the ego vehicle (and support overriding the control) -->
+  <node pkg="carla_manual_control" type="carla_manual_control_bag.py" name="carla_manual_control_$(arg role_name)" output="screen">
+    <param name="role_name" value="$(arg role_name)"/>
+  </node>
+
+  <!-- <node pkg="mapp" type="kill.py" name="kill_$(arg role_name)" output="screen" required="true">
+    <param name="role_name" value="$(arg role_name)"/>
+  </node> -->
+
+  
+</launch>
